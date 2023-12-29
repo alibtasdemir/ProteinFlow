@@ -1,19 +1,38 @@
+import collections
 import io
 import pickle
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict
 from Bio.PDB import PDBParser
+from Bio.PDB.Chain import Chain
 import torch
+import string
 
 from dataset.protein import Protein
-import residue_constants
+from utils import residue_constants
+
 import numpy as np
 import os
+
+
+
+ALPHANUMERIC = string.ascii_letters + string.digits + ' '
+CHAIN_TO_INT = {
+    chain_char: i for i, chain_char in enumerate(ALPHANUMERIC)
+}
+INT_TO_CHAIN = {
+    i: chain_char for i, chain_char in enumerate(ALPHANUMERIC)
+}
+
+
+def aatype_to_seq(aatype: str) -> str:
+    return ''.join([residue_constants.restypes_with_x[x] for x in aatype])
 
 
 class CpuUnpickler(pickle.Unpickler):
     """Pytorch pickle loading workaround.
     https://github.com/pytorch/pytorch/issues/16797
     """
+
     def find_class(self, module, name):
         if module == 'torch.storage' and name == '_load_from_bytes':
             return lambda x: torch.load(io.BytesIO(x), map_location='cpu')
@@ -81,7 +100,9 @@ def build_from_pdb_string(pdb_str: str, chain_id: Optional[str] = None) -> Prote
     for chain in model:
         if chain_id is not None and chain.id != chain_id:
             continue
+
         for res in chain:
+            # TODO: write a function to do this job
             if res.id[2] != ' ':
                 raise ValueError(
                     f'PDB contains an insertion code at chain {chain.id} and residue '
@@ -120,3 +141,73 @@ def build_from_pdb_string(pdb_str: str, chain_id: Optional[str] = None) -> Prote
         residue_index=np.array(residue_index),
         chain_index=chain_index,
         b_factors=np.array(b_factors))
+
+
+def pdb_chain_parser(chain: Chain, chain_id: str) -> Protein:
+    atom_positions = []
+    aatype = []
+    atom_mask = []
+    residue_index = []
+    b_factors = []
+    chain_ids = []
+    for res in chain:
+        res_shortname = residue_constants.restype_3to1.get(res.resname, 'X')
+        restype_idx = residue_constants.restype_order.get(
+            res_shortname, residue_constants.restype_num)
+        pos = np.zeros((residue_constants.atom_type_num, 3))
+        mask = np.zeros((residue_constants.atom_type_num,))
+        res_b_factors = np.zeros((residue_constants.atom_type_num,))
+        for atom in res:
+            if atom.name not in residue_constants.atom_types:
+                continue
+            pos[residue_constants.atom_order[atom.name]] = atom.coord
+            mask[residue_constants.atom_order[atom.name]] = 1.
+            res_b_factors[residue_constants.atom_order[atom.name]] = atom.bfactor
+        aatype.append(restype_idx)
+        atom_positions.append(pos)
+        atom_mask.append(mask)
+        residue_index.append(res.id[1])
+        b_factors.append(res_b_factors)
+        chain_ids.append(chain_id)
+
+    return Protein(
+        atom_positions=np.array(atom_positions),
+        atom_mask=np.array(atom_mask),
+        aatype=np.array(aatype),
+        residue_index=np.array(residue_index),
+        chain_index=np.array(chain_ids),
+        b_factors=np.array(b_factors))
+
+
+def chain_str_to_int(chain_str: str):
+    chain_int = 0
+    if len(chain_str) == 1:
+        return CHAIN_TO_INT[chain_str]
+    for i, chain_char in enumerate(chain_str):
+        chain_int += CHAIN_TO_INT[chain_char] + (i * len(ALPHANUMERIC))
+    return chain_int
+
+
+def parse_chain_feats(chain_feats, scale_factor=1.):
+    ca_idx = residue_constants.atom_order['CA']
+    chain_feats['bb_mask'] = chain_feats['atom_mask'][:, ca_idx]
+    bb_pos = chain_feats['atom_positions'][:, ca_idx]
+    bb_center = np.sum(bb_pos, axis=0) / (np.sum(chain_feats['bb_mask']) + 1e-5)
+    centered_pos = chain_feats['atom_positions'] - bb_center[None, None, :]
+    scaled_pos = centered_pos / scale_factor
+    chain_feats['atom_positions'] = scaled_pos * chain_feats['atom_mask'][..., None]
+    chain_feats['bb_positions'] = chain_feats['atom_positions'][:, ca_idx]
+    return chain_feats
+
+
+def concat_np_features(np_dicts: List[Dict[str, np.ndarray]], add_batch_dim: bool):
+    combined_dict = collections.defaultdict(list)
+    for chain_dict in np_dicts:
+        for feat_name, feat_val in chain_dict.items():
+            if add_batch_dim:
+                feat_val = feat_val[None]
+            combined_dict[feat_name].append(feat_val)
+
+    for feat_name, feat_vals in combined_dict.items():
+        combined_dict[feat_name] = np.concatenate(feat_vals, axis=0)
+    return combined_dict

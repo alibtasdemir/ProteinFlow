@@ -11,6 +11,17 @@ def main():
 
 
 if __name__ == '__main__':
-    data_dir = "../data/processed/"
+    FEATURES_1D = (
+        "coords_in",
+        "torsions_in",
+        "b_factors",
+        "atom_positions",
+        "aatype",
+        "atom_mask",
+        "residue_index",
+        "chain_index",
+    )
+    data_dir = "data/processed/"
     prot = read_pkl(os.path.join(data_dir, "1A0N.pkl"))
-    print(prot)
+    print(prot.keys())
+    # print(prot["atom_positions"].shape)

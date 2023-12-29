@@ -9,9 +9,8 @@ from Bio import PDB
 import numpy as np
 import mdtraj as md
 
-from data import utils as du
-from data import parsers
-from data import errors
+from utils import errors
+from utils.pdbUtils import pdb_chain_parser, chain_str_to_int, write_pkl, parse_chain_feats, concat_np_features
 
 # Define the parser
 parser = argparse.ArgumentParser(
@@ -75,17 +74,17 @@ def process_file(file_path: str, write_dir: str):
     all_seqs = set()
     for chain_id, chain in struct_chains.items():
         # Convert chain id into int
-        chain_id = du.chain_str_to_int(chain_id)
-        chain_prot = parsers.process_chain(chain, chain_id)
+        chain_id = chain_str_to_int(chain_id)
+        chain_prot = pdb_chain_parser(chain, chain_id)
         chain_dict = dataclasses.asdict(chain_prot)
-        chain_dict = du.parse_chain_feats(chain_dict)
+        chain_dict = parse_chain_feats(chain_dict)
         all_seqs.add(tuple(chain_dict['aatype']))
         struct_feats.append(chain_dict)
     if len(all_seqs) == 1:
         metadata['quaternary_category'] = 'homomer'
     else:
         metadata['quaternary_category'] = 'heteromer'
-    complex_feats = du.concat_np_features(struct_feats, False)
+    complex_feats = concat_np_features(struct_feats, False)
 
     # Process geometry features
     complex_aatype = complex_feats['aatype']
@@ -119,7 +118,7 @@ def process_file(file_path: str, write_dir: str):
     metadata['radius_gyration'] = pdb_dg[0]
 
     # Write features to pickles.
-    du.write_pkl(processed_path, complex_feats)
+    write_pkl(processed_path, complex_feats)
 
     # Return metadata
     return metadata

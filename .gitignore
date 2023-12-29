@@ -378,3 +378,8 @@ android/pytorch_android_torchvision/.cxx
 
 # Custom folders
 data/
+
+# OS X
+.Spotlight-V100
+.Trashes
+._*
