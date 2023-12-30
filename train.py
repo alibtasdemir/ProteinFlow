@@ -13,7 +13,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 from dataset.data import PdbDataModule
 from models.proteinflow_wrapper import ProteinFlowModule
-#from experiments import utils as eu
+
 from utils.experiments import get_pylogger, flatten_dict
 import wandb
 

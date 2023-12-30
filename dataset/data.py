@@ -12,19 +12,17 @@ import numpy as np
 import torch
 import math
 import tree
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from torch.utils import data
 import pandas as pd
 
-from openfold.data import data_transforms
-from openfold.utils import rigid_utils
+from openfold_data import data_transforms
+import utils.openfold_rigid_utils as rigid_utils
 
-from utils import residue_constants
-from dataset import protein
-from utils.pdbUtils import read_pkl, parse_chain_feats, pad_feats
+from utils.pdbUtils import read_pkl, parse_chain_feats
 
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler, dist
 
 

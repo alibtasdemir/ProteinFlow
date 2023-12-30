@@ -19,10 +19,10 @@ Code adapted from OpenFold.
 """
 
 import torch
-from openfold.data import data_transforms
-from openfold.np import residue_constants
-from openfold.utils import rigid_utils as ru
-#from data import utils as du
+from openfold_data import data_transforms
+from openfold_np import residue_constants
+from openfold_utils import rigid_utils as ru
+
 from utils.modelUtils import create_rigid, adjust_oxygen_pos
 
 Rigid = ru.Rigid
