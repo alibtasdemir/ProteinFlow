@@ -385,3 +385,5 @@ data/
 ._*
 
 wandb/
+ckpt/
+outputs/
