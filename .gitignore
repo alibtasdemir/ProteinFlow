@@ -383,3 +383,5 @@ data/
 .Spotlight-V100
 .Trashes
 ._*
+
+wandb/

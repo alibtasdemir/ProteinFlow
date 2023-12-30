@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Constants used in AlphaFold and some less clean stuff I added :)"""
+"""Constants used in AlphaFold"""
 
 import collections
 import functools

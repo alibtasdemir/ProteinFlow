@@ -1,4 +1,5 @@
 import os
+import GPUtil
 import torch
 
 import hydra
@@ -11,11 +12,12 @@ from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from dataset.data import PdbDataModule
-from models.flow_module import FlowModule
-from experiments import utils as eu
+from models.proteinflow_wrapper import ProteinFlowModule
+#from experiments import utils as eu
+from utils.experiments import get_pylogger, flatten_dict
 import wandb
 
-log = eu.get_pylogger(__name__)
+log = get_pylogger(__name__)
 torch.set_float32_matmul_precision('high')
 
 
@@ -26,7 +28,7 @@ class Experiment:
         self._data_cfg = cfg.data
         self._exp_cfg = cfg.experiment
         self._datamodule: LightningDataModule = PdbDataModule(self._data_cfg)
-        self._model: LightningModule = FlowModule(self._cfg)
+        self._model: LightningModule = ProteinFlowModule(self._cfg)
 
     def train(self):
         callbacks = []
@@ -53,7 +55,7 @@ class Experiment:
             with open(cfg_path, 'w') as f:
                 OmegaConf.save(config=self._cfg, f=f.name)
             cfg_dict = OmegaConf.to_container(self._cfg, resolve=True)
-            flat_cfg = dict(eu.flatten_dict(cfg_dict))
+            flat_cfg = dict(flatten_dict(cfg_dict))
             if isinstance(logger.experiment.config, wandb.sdk.wandb_config.Config):
                 logger.experiment.config.update(flat_cfg)
 
@@ -75,7 +77,7 @@ class Experiment:
         )
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="base.yaml")
+@hydra.main(version_base=None, config_path="./configs", config_name="base.yaml")
 def main(cfg: DictConfig):
     if cfg.experiment.warm_start is not None and cfg.experiment.warm_start_cfg_override:
         # Loads warm start config.
