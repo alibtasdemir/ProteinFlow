@@ -13,7 +13,6 @@ import torch
 import math
 import tree
 from omegaconf import DictConfig
-from torch.utils import data
 import pandas as pd
 
 from openfold_data import data_transforms
@@ -22,7 +21,7 @@ import utils.openfold_rigid_utils as rigid_utils
 from utils.pdbUtils import read_pkl, parse_chain_feats
 
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler, dist
 
 
@@ -40,7 +39,7 @@ class PdbDataModule(LightningDataModule):
             is_training=True,
         )
         self._valid_dataset = PdbDataset(
-            _dataset_cfg=self.dataset_cfg,
+            dataset_cfg=self.dataset_cfg,
             is_training=False
         )
 
@@ -70,16 +69,16 @@ class PdbDataModule(LightningDataModule):
         )
 
 
-class PdbDataset(data.Dataset):
+class PdbDataset(Dataset):
     def __init__(
             self,
             *,
-            _dataset_cfg,
+            dataset_cfg,
             is_training
     ):
         self._log = logging.getLogger(__name__)
         self._is_training = is_training
-        self._dataset_cfg = _dataset_cfg
+        self._dataset_cfg = dataset_cfg
         self._init_metadata()
         self._rng = np.random.default_rng(seed=self._dataset_cfg.seed)
 
@@ -258,7 +257,7 @@ class LengthBatcher:
 
 @hydra.main(version_base=None, config_path="../", config_name="train_config")
 def my_app(cfg: DictConfig) -> None:
-    data = PdbDataset(_dataset_cfg=cfg.data.dataset, is_training=True)
+    data = PdbDataset(dataset_cfg=cfg.data.dataset, is_training=True)
     print(len(data))
     print(data[0])
 
