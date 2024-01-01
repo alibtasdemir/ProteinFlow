@@ -179,7 +179,7 @@ class ProteinFlowModule(LightningModule):
                 ca_ca_metrics = metrics.calc_ca_ca_metrics(final_pos[:, metrics.CA_IDX])
                 batch_metrics.append((mdtraj_metrics | ca_ca_metrics))
             except Exception:
-                raise ValueError("Exception occured!.")
+                continue
         batch_metrics = pd.DataFrame(batch_metrics)
         self.validation_epoch_metrics.append(batch_metrics)
 
