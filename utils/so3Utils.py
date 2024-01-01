@@ -5,7 +5,7 @@ from typing import Callable, Dict, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 logger = logging.getLogger(__name__)
 

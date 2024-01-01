@@ -191,7 +191,7 @@ class NodeEmbedder(nn.Module):
         pos_emb = pos_emb * mask.unsqueeze(-1)
 
         input_features = [pos_emb, self.embed_t(timesteps, mask)]
-        return self.linear(torch.cat(input_features, dim=1))
+        return self.linear(torch.cat(input_features, dim=-1))
 
 
 class EdgeEmbedder(nn.Module):

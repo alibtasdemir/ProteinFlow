@@ -44,7 +44,7 @@ class PdbDataModule(LightningDataModule):
         )
 
     def train_dataloader(self, rank=None, num_replicas=None):
-        num_workers = self.data_cfg.num_workers
+        num_workers = self.loader_cfg.num_workers
         return DataLoader(
             self._train_dataset,
             batch_sampler=LengthBatcher(
@@ -166,23 +166,24 @@ class PdbDataset(Dataset):
 
 
 class LengthBatcher:
+
     def __init__(
             self,
             *,
             sampler_cfg,
             metadata_csv,
-            seed=9,
+            seed=123,
             shuffle=True,
             num_replicas=None,
-            rank=None
+            rank=None,
     ):
         super().__init__()
+        self.sample_order = None
         self._log = logging.getLogger(__name__)
         if num_replicas is None:
             self.num_replicas = dist.get_world_size()
         else:
             self.num_replicas = num_replicas
-
         if rank is None:
             self.rank = dist.get_rank()
         else:
@@ -190,7 +191,8 @@ class LengthBatcher:
 
         self._sampler_cfg = sampler_cfg
         self._data_csv = metadata_csv
-
+        # Each replica needs the same number of batches. We set the number
+        # of batches to arbitrarily be the number of examples per replica.
         self._num_batches = math.ceil(len(self._data_csv) / self.num_replicas)
         self._data_csv['index'] = list(range(len(self._data_csv)))
         self.seed = seed
