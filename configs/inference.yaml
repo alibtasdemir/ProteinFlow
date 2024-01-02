@@ -8,11 +8,11 @@ inference:
   # Use this to write with date-time stamp.
   name: run_${now:%Y-%m-%d}_${now:%H-%M}
   seed: 123
-  ckpt_path: weights/published.ckpt
-  output_dir: inference_outputs/
+  ckpt_path: /content/drive/MyDrive/BBM/CMP784/project/src/ckpt/se3-fm/baseline-monomer/2024-01-01_22-32-35/last.ckpt
+  output_dir: /content/drive/MyDrive/BBM/CMP784/project/src/inference_outputs/
 
   use_gpu: True
-  num_gpus: 2
+  num_gpus: 1
 
   interpolant:
     min_t: 1e-2
